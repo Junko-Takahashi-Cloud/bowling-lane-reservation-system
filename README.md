@@ -4,6 +4,23 @@
 動作するMVPです。ローカルで登録→ログイン→予約→キャンセルの一連のフローを
 curl（バックエンド）およびStreamlitアプリの起動確認（フロントエンド）で確認済みです。
 
+## 画面イメージ
+
+### ログイン
+![ログイン画面](screenshots/login.png)
+
+### 新規登録
+![新規登録画面](screenshots/register.png)
+
+### 空き状況確認・予約
+![予約画面](screenshots/reservation.png)
+
+### 自分の予約一覧
+![自分の予約一覧](screenshots/my-reservations.png)
+
+### 予約後の空き状況（反映確認）
+![予約後の空き状況](screenshots/availability-after-booking.png)
+
 ## フォルダ構成
 
 ```
