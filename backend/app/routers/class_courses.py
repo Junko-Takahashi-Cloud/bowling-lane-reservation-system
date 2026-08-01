@@ -20,10 +20,11 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.models import (
-    ClassCourse, ClassSession, ClassEnrollment, Reservation, LaneSet, User,
+    ClassCourse, ClassSession, ClassEnrollment, ClassGroupEnrollment, Reservation, LaneSet, User,
 )
 from app.schemas.schemas import (
     ClassCourseCreate, ClassCourseOut, ClassSessionOut, ClassEnrollmentOut,
+    ClassGroupEnrollmentCreate, ClassGroupEnrollmentOut,
 )
 from app.utils.auth import get_current_user
 from app.routers.reservations import _has_overlap, _reservation_lock
@@ -194,6 +195,43 @@ def enroll_class_course(
         db.commit()
         db.refresh(enrollment)
         return enrollment
+
+
+@router.post("/{course_id}/enroll-group", response_model=ClassGroupEnrollmentOut, status_code=status.HTTP_201_CREATED)
+def enroll_class_course_group(
+    course_id: int,
+    payload: ClassGroupEnrollmentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """職場など、代表者がまとめて申し込む団体申込。人数上限なし（capacityのチェック対象外）。"""
+    course = db.query(ClassCourse).filter(ClassCourse.course_id == course_id).first()
+    if course is None:
+        raise HTTPException(status_code=404, detail="コースが見つかりません")
+    if course.status != "scheduled":
+        raise HTTPException(status_code=409, detail="このコースは開講されていません")
+
+    group_enrollment = ClassGroupEnrollment(
+        course_id=course_id,
+        contact_name=payload.contact_name,
+        contact_email=payload.contact_email,
+        contact_phone=payload.contact_phone,
+        headcount=payload.headcount,
+        status="enrolled",
+    )
+    db.add(group_enrollment)
+    db.commit()
+    db.refresh(group_enrollment)
+    return group_enrollment
+
+
+@router.get("/{course_id}/group-enrollments", response_model=list[ClassGroupEnrollmentOut])
+def list_group_enrollments(course_id: int, db: Session = Depends(get_db)):
+    return (
+        db.query(ClassGroupEnrollment)
+        .filter(ClassGroupEnrollment.course_id == course_id, ClassGroupEnrollment.status == "enrolled")
+        .all()
+    )
 
 
 @router.delete("/{course_id}/enroll", response_model=ClassEnrollmentOut)

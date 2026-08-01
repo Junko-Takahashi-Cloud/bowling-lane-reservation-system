@@ -244,7 +244,7 @@ class ClassEnrollmentOut(BaseModel):
         from_attributes = True
 
 
-# ---------- Group Reservation (第二弾で追加) ----------
+# ---------- Group Reservation (クラウドファンディング特典＝レーン貸し切り用。第二弾で追加) ----------
 
 class GroupReservationCreate(BaseModel):
     lane_set_id: str
@@ -295,6 +295,37 @@ class GroupReservationOut(BaseModel):
     contact_phone: Optional[str] = None
     headcount: Optional[int] = None
     status: str
+
+    class Config:
+        from_attributes = True
+
+
+# ---------- ClassGroupEnrollment (教室への団体申込＝職場単位など。第二弾で追加) ----------
+
+class ClassGroupEnrollmentCreate(BaseModel):
+    contact_name: str
+    contact_email: EmailStr
+    contact_phone: Optional[str] = None
+    headcount: Optional[int] = None
+
+    @field_validator("headcount")
+    @classmethod
+    def validate_headcount(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("headcount must be greater than 0")
+        return v
+
+
+class ClassGroupEnrollmentOut(BaseModel):
+    group_enrollment_id: int
+    course_id: int
+    contact_name: str
+    contact_email: EmailStr
+    contact_phone: Optional[str] = None
+    headcount: Optional[int] = None
+    status: str
+    created_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

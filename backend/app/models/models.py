@@ -143,7 +143,8 @@ class ClassEnrollment(Base):
 
 
 class GroupReservationDetail(Base):
-    """団体・グループ予約の追加情報。第二弾で追加。"""
+    """クラウドファンディング特典（レーン貸し切り等）用の予約追加情報。
+    教室・団体練習とは無関係の、特典利用者向けレーン貸し切り予約。第二弾で追加。"""
     __tablename__ = "group_reservation_details"
 
     detail_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -154,3 +155,25 @@ class GroupReservationDetail(Base):
     headcount = Column(Integer, nullable=True)
 
     reservation = relationship("Reservation")
+
+
+class ClassGroupEnrollment(Base):
+    """教室コースへの団体申込（職場単位など）。人数上限なし。第二弾で追加。
+    個人申込(ClassEnrollment)とは別枠で扱い、定員(capacity)のチェック対象にしない。"""
+    __tablename__ = "class_group_enrollments"
+
+    group_enrollment_id = Column(Integer, primary_key=True, autoincrement=True)
+    course_id = Column(Integer, ForeignKey("class_courses.course_id"), nullable=False, index=True)
+    contact_name = Column(String(100), nullable=False)
+    contact_email = Column(String(255), nullable=False)
+    contact_phone = Column(String(20), nullable=True)
+    headcount = Column(Integer, nullable=True)
+    status = Column(String(20), nullable=False, default="enrolled")
+    created_at = Column(DateTime, server_default=func.now())
+    cancelled_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("status IN ('enrolled','cancelled')", name="ck_group_enrollment_status"),
+    )
+
+    course = relationship("ClassCourse")
