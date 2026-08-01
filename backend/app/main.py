@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import Base, engine, SessionLocal
 from app.models.models import LaneSet
-from app.routers import auth, reservations, admin
+from app.routers import auth, reservations, admin, class_courses
 
 Base.metadata.create_all(bind=engine)
 
@@ -29,6 +29,7 @@ app = FastAPI(title="スポーツボウリング場予約システム API", vers
 app.include_router(auth.router)
 app.include_router(reservations.router)
 app.include_router(admin.router)
+app.include_router(class_courses.router)
 
 
 @app.get("/")
