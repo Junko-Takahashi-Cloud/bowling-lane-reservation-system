@@ -31,7 +31,7 @@ def logout():
 
 
 ROLE_LABELS = {"user": "一般利用者", "competitor": "競技者", "admin": "管理者"}
-TYPE_LABELS = {"general": "一般利用", "practice": "競技者練習", "class": "初心者教室（将来拡張）"}
+TYPE_LABELS = {"general": "一般利用", "practice": "競技者練習", "class": "初心者教室", "group": "レーン貸し切り（クラウドファンディング特典）"}
 
 
 # ---------- 未ログイン: ログイン / 新規登録 ----------
@@ -105,6 +105,21 @@ def render_reservation_page():
         st.warning("現在利用可能なレーンセットがありません。")
         return
 
+    reservation_type = st.selectbox(
+        "予約種別", options=["general", "practice", "group"], format_func=lambda v: TYPE_LABELS[v]
+    )
+
+    contact_name = contact_email = contact_phone = None
+    headcount = None
+    if reservation_type == "general":
+        st.caption("一般利用は初心者教室を修了した方のみご利用いただけます。")
+    elif reservation_type == "group":
+        st.caption("クラウドファンディング特典（レーン貸し切り）には代表者情報の入力が必要です。")
+        contact_name = st.text_input("代表者氏名")
+        contact_email = st.text_input("代表者メールアドレス")
+        contact_phone = st.text_input("代表者電話番号（任意）")
+        headcount = st.number_input("参加人数（任意）", min_value=0, step=1, value=0)
+
     with st.form("reservation_form"):
         lane_set_id = st.selectbox("レーンセット", options=available_lane_sets)
         col1, col2 = st.columns(2)
@@ -112,20 +127,33 @@ def render_reservation_page():
             start_time = st.time_input("開始時間", value=time(10, 0), step=timedelta(minutes=30))
         with col2:
             end_time = st.time_input("終了時間", value=time(11, 0), step=timedelta(minutes=30))
-        reservation_type = st.selectbox(
-            "予約種別", options=["general", "practice"], format_func=lambda v: TYPE_LABELS[v]
-        )
         submitted = st.form_submit_button("予約する")
 
     if submitted:
-        ok, data = api.create_reservation(
-            st.session_state.token,
-            lane_set_id,
-            target_date.isoformat(),
-            start_time.strftime("%H:%M:%S"),
-            end_time.strftime("%H:%M:%S"),
-            reservation_type,
-        )
+        if reservation_type == "group":
+            if not contact_name or not contact_email:
+                st.error("団体予約には代表者氏名とメールアドレスの入力が必要です。")
+                return
+            ok, data = api.create_group_reservation(
+                st.session_state.token,
+                lane_set_id,
+                target_date.isoformat(),
+                start_time.strftime("%H:%M:%S"),
+                end_time.strftime("%H:%M:%S"),
+                contact_name,
+                contact_email,
+                contact_phone or None,
+                int(headcount) if headcount else None,
+            )
+        else:
+            ok, data = api.create_reservation(
+                st.session_state.token,
+                lane_set_id,
+                target_date.isoformat(),
+                start_time.strftime("%H:%M:%S"),
+                end_time.strftime("%H:%M:%S"),
+                reservation_type,
+            )
         if ok:
             st.success("予約が完了しました。")
             st.rerun()
@@ -133,7 +161,76 @@ def render_reservation_page():
             st.error(f"予約に失敗しました: {data}")
 
 
-# ---------- 自分の予約確認・キャンセル ----------
+# ---------- 初心者教室コース一覧・申込 ----------
+def render_class_courses_page():
+    st.header("🎓 初心者教室（全5回コース）")
+
+    ok, courses = api.list_class_courses()
+    if not ok:
+        st.error(f"コース一覧の取得に失敗しました: {courses}")
+        return
+
+    if not courses:
+        st.caption("現在開講中のコースはありません。")
+        return
+
+    day_labels = {
+        "monday": "月", "tuesday": "火", "wednesday": "水", "thursday": "木",
+        "friday": "金", "saturday": "土", "sunday": "日",
+    }
+
+    for c in courses:
+        remaining = c["capacity"] - (c["enrolled_count"] or 0)
+        with st.container(border=True):
+            st.write(
+                f"**毎週{day_labels.get(c['day_of_week'], c['day_of_week'])}曜日** "
+                f"{c['start_time']}〜{c['end_time']}／{c['lane_set_id']}セット／講師: {c['instructor_name']}"
+            )
+            st.caption(
+                f"初回: {c['first_date']}／全{c['session_count']}回／"
+                f"空き {remaining} / {c['capacity']} 名"
+            )
+            if remaining > 0:
+                if st.button("このコースに申し込む", key=f"enroll_{c['course_id']}"):
+                    ok, result = api.enroll_class_course(st.session_state.token, c["course_id"])
+                    if ok:
+                        st.success("申し込みが完了しました。")
+                        st.rerun()
+                    else:
+                        st.error(f"申し込みに失敗しました: {result}")
+            else:
+                st.warning("満員です。")
+
+            if st.button("申し込みをキャンセル", key=f"cancel_enroll_{c['course_id']}"):
+                ok, result = api.cancel_class_enrollment(st.session_state.token, c["course_id"])
+                if ok:
+                    st.success("キャンセルしました。")
+                    st.rerun()
+                else:
+                    st.error(f"キャンセルに失敗しました: {result}")
+
+            with st.expander("職場・グループでまとめて申し込む（人数上限なし）"):
+                with st.form(f"group_enroll_form_{c['course_id']}"):
+                    g_contact_name = st.text_input("代表者氏名", key=f"g_name_{c['course_id']}")
+                    g_contact_email = st.text_input("代表者メールアドレス", key=f"g_email_{c['course_id']}")
+                    g_contact_phone = st.text_input("代表者電話番号（任意）", key=f"g_phone_{c['course_id']}")
+                    g_headcount = st.number_input("参加人数", min_value=1, step=1, value=1, key=f"g_head_{c['course_id']}")
+                    g_submitted = st.form_submit_button("団体で申し込む")
+                if g_submitted:
+                    if not g_contact_name or not g_contact_email:
+                        st.error("代表者氏名とメールアドレスの入力が必要です。")
+                    else:
+                        ok, result = api.enroll_class_course_group(
+                            st.session_state.token, c["course_id"],
+                            g_contact_name, g_contact_email, g_contact_phone or None, int(g_headcount),
+                        )
+                        if ok:
+                            st.success("団体申込が完了しました。")
+                            st.rerun()
+                        else:
+                            st.error(f"申し込みに失敗しました: {result}")
+
+
 def render_my_reservations_page():
     st.header("🗒️ 自分の予約")
     ok, reservations = api.list_my_reservations(st.session_state.token)
@@ -224,9 +321,9 @@ def main():
     with st.sidebar:
         st.write(f"👤 ログイン中: {st.session_state.user_name}")
         if st.session_state.role == "admin":
-            page = st.radio("メニュー", ["予約する", "自分の予約", "管理者ダッシュボード"])
+            page = st.radio("メニュー", ["予約する", "教室に申し込む", "自分の予約", "管理者ダッシュボード"])
         else:
-            page = st.radio("メニュー", ["予約する", "自分の予約"])
+            page = st.radio("メニュー", ["予約する", "教室に申し込む", "自分の予約"])
         st.divider()
         if st.button("ログアウト"):
             logout()
@@ -234,6 +331,8 @@ def main():
 
     if page == "予約する":
         render_reservation_page()
+    elif page == "教室に申し込む":
+        render_class_courses_page()
     elif page == "自分の予約":
         render_my_reservations_page()
     elif page == "管理者ダッシュボード":

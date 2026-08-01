@@ -66,6 +66,59 @@ def create_reservation(token: str, lane_set_id: str, date: str, start_time: str,
     return _handle(resp)
 
 
+def create_group_reservation(
+    token: str, lane_set_id: str, date: str, start_time: str, end_time: str,
+    contact_name: str, contact_email: str, contact_phone: str = None, headcount: int = None,
+):
+    resp = requests.post(
+        f"{API_BASE_URL}/reservations/group",
+        headers=_auth_headers(token),
+        json={
+            "lane_set_id": lane_set_id,
+            "date": date,
+            "start_time": start_time,
+            "end_time": end_time,
+            "contact_name": contact_name,
+            "contact_email": contact_email,
+            "contact_phone": contact_phone,
+            "headcount": headcount,
+        },
+    )
+    return _handle(resp)
+
+
+def list_class_courses():
+    resp = requests.get(f"{API_BASE_URL}/class-courses")
+    return _handle(resp)
+
+
+def enroll_class_course(token: str, course_id: int):
+    resp = requests.post(f"{API_BASE_URL}/class-courses/{course_id}/enroll", headers=_auth_headers(token))
+    return _handle(resp)
+
+
+def enroll_class_course_group(
+    token: str, course_id: int, contact_name: str, contact_email: str,
+    contact_phone: str = None, headcount: int = None,
+):
+    resp = requests.post(
+        f"{API_BASE_URL}/class-courses/{course_id}/enroll-group",
+        headers=_auth_headers(token),
+        json={
+            "contact_name": contact_name,
+            "contact_email": contact_email,
+            "contact_phone": contact_phone,
+            "headcount": headcount,
+        },
+    )
+    return _handle(resp)
+
+
+def cancel_class_enrollment(token: str, course_id: int):
+    resp = requests.delete(f"{API_BASE_URL}/class-courses/{course_id}/enroll", headers=_auth_headers(token))
+    return _handle(resp)
+
+
 def list_my_reservations(token: str):
     resp = requests.get(f"{API_BASE_URL}/reservations/me", headers=_auth_headers(token))
     return _handle(resp)
