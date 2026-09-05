@@ -28,25 +28,42 @@ V1(mainブランチ):個人予約(一般/競技者練習)の基本フローが�
 4つのAI(ChatGPT・Copilot・Gemini・Claude)とリレー形式で開発した経緯を記事にしています。
 
 **第一弾:4AI協働開発記**
-- Zenn(技術深掘り版)
-- Qiita
-- note
-- LinkedIn
+- [Zenn(技術深掘り版)](https://zenn.dev/junko_jp/articles/4ai-relay-bowling-reservation-system)
+- [Qiita](https://qiita.com/Junko-Takahashi-Cloud/items/7eecb9bfcef0efe1ea99)
+- [note](https://note.com/junko_ai/n/n4dd31e7daaf9)
+- [LinkedIn](https://t.co/xajahejDnj)
 
 **第二弾:スポーツボウリング場構想を育てる開発日記**
-- Zenn(他プラットフォームは順次公開予定)
+- [Zenn](https://zenn.dev/junko_jp/articles/bowling-v2-development)(他プラットフォームは順次公開予定)
 
 ## 画面イメージ
 
-- ログイン画面
-- 新規登録画面
-- 予約画面(空き状況確認・予約)
-- 自分の予約一覧
-- 予約後の空き状況(反映確認)
-- 初心者教室申込(V2)
-- 一般利用の資格制限(V2)
-- レーン貸し切り予約(V2)
-- 自分の予約一覧(V2予約種別を含む)
+### ログイン
+![ログイン画面](screenshots/login.png)
+
+### 新規登録
+![新規登録画面](screenshots/register.png)
+
+### 空き状況確認・予約
+![予約画面](screenshots/reservation.png)
+
+### 自分の予約一覧
+![自分の予約一覧](screenshots/my-reservations.png)
+
+### 予約後の空き状況(反映確認)
+![予約後の空き状況](screenshots/availability-after-booking.png)
+
+### 初心者教室(全5回コース)への申込(V2)
+![初心者教室申込](screenshots/class-course-list.png)
+
+### 一般利用の資格制限(V2)
+![一般利用の資格制限](screenshots/general-use-restriction.png)
+
+### クラウドファンディング特典(レーン貸し切り予約)(V2)
+![レーン貸し切り予約](screenshots/group-reservation-crowdfunding.png)
+
+### 自分の予約一覧(V2予約種別を含む)
+![自分の予約一覧V2](screenshots/my-reservations-v2.png)
 
 ## フォルダ構成
 
